@@ -1,0 +1,69 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: aca1f9a4a2169c1e54f8411720fcde9d436ff3c9b68b5acc7b7eb267ae5191c5
+
+name:           lascive
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/lascive#readme>
+homepage:       https://github.com/githubuser/lascive#readme
+bug-reports:    https://github.com/githubuser/lascive/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2020 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/lascive
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_lascive
+  hs-source-dirs:
+      src
+  ghc-options: -fllvm -mavx2 -ddump-llvm -ddump-to-file
+  build-depends:
+      base >=4.7 && <5
+    , ghc-prim
+    , primitive
+  default-language: Haskell2010
+
+executable lascive-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_lascive
+  hs-source-dirs:
+      app
+  ghc-options: -fllvm -mavx2 -ddump-llvm -ddump-to-file -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , ghc-prim
+    , lascive
+    , primitive
+  default-language: Haskell2010
+
+test-suite lascive-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_lascive
+  hs-source-dirs:
+      test
+  ghc-options: -fllvm -mavx2 -ddump-llvm -ddump-to-file -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , ghc-prim
+    , lascive
+    , primitive
+  default-language: Haskell2010
