@@ -9,12 +9,15 @@ import Data.Primitive (Prim, ByteArray(..), MutableByteArray(..))
 import qualified Data.Primitive as P
 
 import qualified Control.Monad.Primitive as C
+import Control.Monad.Primitive (PrimMonad, PrimState) 
 
 import qualified GHC.Prim as G
-import GHC.Prim
+import GHC.Prim (DoubleX4#, Double#, Int#, State#)
 
 import GHC.Base (Int(..), Double(..))
 import Control.Monad.ST (ST, runST)
+
+import Control.DeepSeq (NFData,rnf)
 
 import Debug.Trace
 
@@ -24,7 +27,7 @@ data DoubleX4 = DoubleX4 DoubleX4#
 
 instance Show DoubleX4 where
     show (DoubleX4 vec) = "(" ++ show (D# a) ++ "," ++ show (D# b) ++ "," ++ show (D# c) ++ "," ++ show (D# d) ++ ")"
-        where (# a, b, c, d #) = unpackDoubleX4# vec
+        where (# a, b, c, d #) = G.unpackDoubleX4# vec
 
 unDoubleX4 :: DoubleX4 -> DoubleX4#
 unDoubleX4 (DoubleX4 vec) = vec
@@ -34,11 +37,13 @@ unDoubleX4 (DoubleX4 vec) = vec
 data Matrix a = Matrix {-# UNPACK #-} !Int -- number of rows
                        {-# UNPACK #-} !Int -- number of column  
                        {-# UNPACK #-} !ByteArray -- content
+    deriving ()
                                      
 instance (Show a, Prim a) => Show (Matrix a) where
     show m@(Matrix nrows ncolumns _) = foldl (\z x -> z ++ show x ++ "\n") "" $ (map (\i -> (map (\j -> readMatrix m i j) [0..ncolumns-1]) ) [0..nrows-1])
 
-
+instance (NFData a) => NFData (Matrix a) where
+    rnf (Matrix r c arr) = seq r . seq c . seq arr $ ()
 
 data MMatrix s a = MMatrix {-# UNPACK #-} !Int -- number of rows
                            {-# UNPACK #-} !Int -- number of column  
@@ -61,85 +66,122 @@ matrixFromList nrows ncols list
           len = length list
 
 
+simdW :: Int
+simdW = 4
 
-regA :: Int               
-regA = 3
+regsA :: Int               
+regsA = 3
 
-regB :: Int
-regB = 4
+mr :: Int 
+mr = regsA
+
+regsB :: Int
+regsB = 4
+
+nr :: Int -- width of the row of B we'll load during kernel
+nr = regsB*simdW
+
+kc :: Int -- height of the L1 cache
+kc = 2048
+
+mc :: Int -- height of the L2 cache
+mc = 8
+
+nc :: Int -- width of the L3 cache
+nc = 48
+
+
 
 for :: Monad m => Int -> Int -> (Int -> m ()) -> m ()
 for n0 !n f = loop n0
   where
     loop i | i == n    = return ()
-           | otherwise = f i >> loop (i+1)
-    {-# INLINE loop #-}
+            | otherwise = f i >> loop (i+1)
 {-# INLINE for #-}
 
+for_step :: Monad m => Int -> Int -> Int -> (Int -> m ()) -> m ()
+for_step n0 !n step f = loop n0
+  where
+    loop i | i >= n    = return ()
+           | otherwise = f i >> loop (i+step)
+{-# INLINE for_step #-}
 
-kernel :: Matrix Double -> Matrix Double -> Matrix Double -> Matrix Double
-kernel a b c = runST $ do
-    mc <- thaw c
-    for 0 regB $ \bi -> do
+-- traceM . (++) "bRow:" . show $ DoubleX4 bRow
 
-        let 
-            bRow = readDoubleX4Matrix b 0 (bi*4) -- corresponds to bb, *4 since simd vec of width/step 4
+gemm :: Matrix Double -> Matrix Double -> Matrix Double -> Matrix Double
+gemm a@(Matrix m k _) b@(Matrix _ n _) c = runST $ do
+    mutc <- thaw c
 
-        -- traceM . (++) "bRow:" . show $ DoubleX4 bRow
+    for_step 0 n nc $ \jc -> do -- nc = L3/kc*sizePrimitive
 
-        for 0 regA $ \ai -> do
+        for_step 0 k kc $ \pc -> do -- kc = L1 size / regsB*simdRegisterSize, 256 for avx2
 
-            let 
-                aVar = unD (readMatrix a ai 0)
-                aVec = broadcastDoubleX4# aVar
-                resMul = timesDoubleX4# bRow aVec
-            
-            -- traceM . (++) "aVar:". show $ D# aVar
+            for_step 0 m mc $ \ic -> do -- mc = L2/kc*sizePrimitive
 
-            -- traceM . (++) "aVec:". show $ DoubleX4 aVec
+                for_step 0 (min nc n) nr $ \jr -> do -- nr is regsB*simdW
 
-            -- traceM . (++) "resMul:". show $ DoubleX4 resMul
+                    for_step 0 (min mc m) mr $ \ir -> do -- mr is regsA 
 
-            cRowLifted <- C.primitive (readDoubleX4MMatrix mc ai (bi*4)) 
+                        for 0 (min kc k) $ \p -> do -- kc = L1 size / regsB*simdRegisterSize, 256 for avx2
 
+                            kernel a b mutc (ir + ic) (p + pc) (jr + jc) 
 
-
-            let 
-                cRow = unDoubleX4 cRowLifted
-                cRes = plusDoubleX4# cRow resMul
-
-            C.primitive_ $ writeDoubleX4MMatrix mc ai (bi*4) cRes -- used to be bi*4
-    freeze mc
+    freeze mutc
     
 
 
+kernel :: (PrimMonad m) => Matrix Double -> Matrix Double -> MMatrix (PrimState m) Double -> Int -> Int -> Int -> m ()
+kernel a b c !i !k !j = do
+
+    -- traceM $ show i ++ "," ++ show k ++ "," ++ show j
+
+    for_step 0 nr simdW $ \bi -> do
+
+        let 
+            bRow = readDoubleX4Matrix b k (j+bi) -- corresponds to bb, *4 since simd vec of width/step 4
+
+        for 0 regsA $ \ai -> do
+
+            let 
+                aVar = unD (readMatrix a (i+ai) k)
+                aVec = G.broadcastDoubleX4# aVar
+                resMul = G.timesDoubleX4# bRow aVec
+            
+            cRowLifted <- C.primitive (readDoubleX4MMatrix c (i+ai) (j+bi)) 
+
+            let 
+                cRow = unDoubleX4 cRowLifted
+                cRes = G.plusDoubleX4# cRow resMul
+
+            C.primitive_ $ writeDoubleX4MMatrix c (i+ai) (j+bi) cRes -- used to be bi*4
+{-# INLINE kernel #-}
 
 readMatrix :: (Prim a) => Matrix a -> Int -> Int -> a
-readMatrix (Matrix _ ncols arr) i j = P.indexByteArray arr (i*ncols + j)
+readMatrix (Matrix _ ncols arr) !i !j = P.indexByteArray arr (i*ncols + j)
 {-# INLINE readMatrix #-}
 
 readMMatrix :: (Prim a) => MMatrix s a -> Int -> Int -> ST s a
-readMMatrix (MMatrix _ ncols arr) i j = P.readByteArray arr (i*ncols + j)
+readMMatrix (MMatrix _ ncols arr) !i !j = P.readByteArray arr (i*ncols + j)
 {-# INLINE readMMatrix #-}
 
 writeMMatrix :: (Prim a) => MMatrix s a -> Int -> Int -> a -> ST s ()
-writeMMatrix (MMatrix _ ncols arr) i j val = P.writeByteArray arr (i*ncols + j) val
+writeMMatrix (MMatrix _ ncols arr) !i !j !val = P.writeByteArray arr (i*ncols + j) val
 {-# INLINE writeMMatrix #-}
 
 readDoubleX4Matrix :: Matrix a -> Int -> Int -> DoubleX4#
-readDoubleX4Matrix (Matrix _ ncols (ByteArray arr)) i j = indexDoubleArrayAsDoubleX4# arr offset
-    where offset = unI $ i*ncols + j
+readDoubleX4Matrix (Matrix _ ncols (ByteArray arr)) !i !j = G.indexDoubleArrayAsDoubleX4# arr offset
+    where !offset = unI $ i*ncols + j
 {-# INLINE readDoubleX4Matrix #-}
 
 readDoubleX4MMatrix :: MMatrix s a -> Int -> Int -> State# s -> (# State# s, DoubleX4 #)
-readDoubleX4MMatrix (MMatrix _ ncols (MutableByteArray arr)) i j s = let (# newS, vec #) = readDoubleArrayAsDoubleX4# arr offset s
+readDoubleX4MMatrix (MMatrix _ ncols (MutableByteArray arr)) !i !j s = let (# newS, vec #) = G.readDoubleArrayAsDoubleX4# arr offset s
                                                                      in (# newS, DoubleX4 vec #)  
-    where offset = unI $ i*ncols + j
+    where !offset = unI $ i*ncols + j
 {-# INLINE readDoubleX4MMatrix #-}
 
 writeDoubleX4MMatrix :: MMatrix s a -> Int -> Int -> DoubleX4# -> State# s -> State# s 
-writeDoubleX4MMatrix (MMatrix _ ncols (MutableByteArray arr)) i j vec = writeDoubleArrayAsDoubleX4# arr offset vec
-    where offset = unI $ i*ncols + j
+writeDoubleX4MMatrix (MMatrix _ ncols (MutableByteArray arr)) !i !j !vec = G.writeDoubleArrayAsDoubleX4# arr offset vec
+    where !offset = unI $ i*ncols + j
 {-# INLINE writeDoubleX4MMatrix #-}
 
 unI :: Int -> Int#

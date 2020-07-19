@@ -1,0 +1,132 @@
+	Sun Jul 19 12:25 2020 Time and Allocation Profiling Report  (Final)
+
+	   lascive-exe +RTS -N -p -RTS
+
+	total time  =        0.03 secs   (95 ticks @ 1000 us, 8 processors)
+	total alloc = 147,710,784 bytes  (excludes profiling overheads)
+
+COST CENTRE           MODULE                   SRC                                           %time %alloc
+
+primitive             Control.Monad.Primitive  Control/Monad/Primitive.hs:205:3-16            33.7    8.8
+gemm.\.\.\.\.\.\      Lib                      src/Lib.hs:(125,50)-(127,72)                   23.2   43.6
+main.b                Main                     app/Main.hs:16:9-63                            21.1   28.4
+byteArrayFromListN.go Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:(278,9)-(285,81)   11.6   16.9
+byteArrayFromList     Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:273:1-56            4.2    0.0
+writeByteArray#       Data.Primitive.Types     Data/Primitive/Types.hs:281:448-517             3.2    0.0
+main.a                Main                     app/Main.hs:15:9-66                             2.1    2.0
+show.\                Lib                      src/Lib.hs:43:55-73                             1.1    0.2
+
+
+                                                                                                                        individual      inherited
+COST CENTRE                   MODULE                   SRC                                          no.      entries  %time %alloc   %time %alloc
+
+MAIN                          MAIN                     <built-in>                                    764          0    0.0    0.1   100.0  100.0
+ CAF                          GHC.Conc.Signal          <entire-module>                               876          0    0.0    0.0     0.0    0.0
+ CAF                          GHC.Float                <entire-module>                               868          0    0.0    0.0     0.0    0.0
+ CAF                          GHC.IO.Encoding          <entire-module>                               860          0    0.0    0.0     0.0    0.0
+ CAF                          GHC.IO.Encoding.Iconv    <entire-module>                               858          0    0.0    0.0     0.0    0.0
+ CAF                          GHC.IO.Handle.FD         <entire-module>                               850          0    0.0    0.0     0.0    0.0
+ CAF                          GHC.IO.Handle.Text       <entire-module>                               848          0    0.0    0.0     0.0    0.0
+ CAF                          GHC.Event.Thread         <entire-module>                               808          0    0.0    0.0     0.0    0.0
+ CAF                          GHC.Event.Poll           <entire-module>                               782          0    0.0    0.0     0.0    0.0
+ CAF:$fShowMatrix1            Lib                      <no location info>                           1492          0    0.0    0.0     0.0    0.0
+ CAF:kc                       Lib                      src/Lib.hs:85:1-2                            1483          0    0.0    0.0     0.0    0.0
+  kc                          Lib                      src/Lib.hs:85:1-9                            1594          1    0.0    0.0     0.0    0.0
+ CAF:main                     Main                     app/Main.hs:10:1-4                           1527          0    0.0    0.0     0.0    0.0
+  main                        Main                     app/Main.hs:(10,1)-(22,11)                   1528          1    0.0    0.0     0.0    0.0
+ CAF:main1                    Main                     <no location info>                           1526          0    0.0    0.0    42.1   50.5
+  main                        Main                     app/Main.hs:(10,1)-(22,11)                   1530          0    0.0    0.0    42.1   50.5
+   main.d                     Main                     app/Main.hs:20:9-22                          1531          1    0.0    0.0    41.1   50.2
+    gemm                      Lib                      src/Lib.hs:(112,1)-(129,15)                  1583          1    0.0    0.0    41.1   50.2
+     freeze                   Lib                      src/Lib.hs:56:1-65                           1603          1    0.0    0.0     0.0    0.0
+      primitive               Control.Monad.Primitive  Control/Monad/Primitive.hs:205:3-16          1604          1    0.0    0.0     0.0    0.0
+     gemm.\                   Lib                      src/Lib.hs:(115,30)-(127,72)                 1586          1    0.0    0.0    41.1   50.2
+      gemm.\.\                Lib                      src/Lib.hs:(117,34)-(127,72)                 1587         10    0.0    0.0    41.1   50.2
+       gemm.\.\.\             Lib                      src/Lib.hs:(119,38)-(127,72)                 1588         10    0.0    0.0    41.1   50.2
+        gemm.\.\.\.\          Lib                      src/Lib.hs:(121,51)-(127,72)                 1590         10    0.0    0.0    41.1   50.2
+         gemm.\.\.\.\.\       Lib                      src/Lib.hs:(123,55)-(127,72)                 1591         10    0.0    0.0    41.1   50.2
+          gemm.\.\.\.\.\.\    Lib                      src/Lib.hs:(125,50)-(127,72)                 1592      20480   23.2   43.6    41.1   50.2
+           primitive          Control.Monad.Primitive  Control/Monad/Primitive.hs:205:3-16          1600     491520   17.9    6.7    17.9    6.7
+           indexByteArray#    Data.Primitive.Types     Data/Primitive/Types.hs:281:223-291          1599     245760    0.0    0.0     0.0    0.0
+           unDoubleX4         Lib                      src/Lib.hs:33:1-31                           1601     245760    0.0    0.0     0.0    0.0
+     thaw                     Lib                      src/Lib.hs:53:1-61                           1584          1    0.0    0.0     0.0    0.0
+      primitive               Control.Monad.Primitive  Control/Monad/Primitive.hs:205:3-16          1585          1    0.0    0.0     0.0    0.0
+   show                       Lib                      src/Lib.hs:43:5-154                          1605          1    0.0    0.0     1.1    0.2
+    show.\                    Lib                      src/Lib.hs:43:55-73                          1607          3    1.1    0.2     1.1    0.2
+    show.\                    Lib                      src/Lib.hs:43:93-138                         1606          3    0.0    0.0     0.0    0.0
+     show.\.\                 Lib                      src/Lib.hs:43:105-120                        1608         48    0.0    0.0     0.0    0.0
+      indexByteArray#         Data.Primitive.Types     Data/Primitive/Types.hs:281:223-291          1609         48    0.0    0.0     0.0    0.0
+ CAF:main_a                   Main                     app/Main.hs:15:9                             1524          0    0.0    0.0     8.4    5.0
+  main                        Main                     app/Main.hs:(10,1)-(22,11)                   1532          0    0.0    0.0     8.4    5.0
+   main.a                     Main                     app/Main.hs:15:9-66                          1533          1    2.1    2.0     8.4    5.0
+    matrixFromList            Lib                      src/Lib.hs:(61,1)-(66,27)                    1538          1    0.0    0.0     6.3    3.0
+     matrixFromList.content   Lib                      src/Lib.hs:65:11-44                          1540          1    0.0    0.0     6.3    3.0
+      byteArrayFromList       Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:273:1-56         1541          1    1.1    0.0     6.3    3.0
+       byteArrayFromListN     Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:(276,1)-(287,30) 1542          1    0.0    0.0     5.3    3.0
+        byteArrayFromListN.go Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:(278,9)-(285,81) 1548      61441    0.0    2.7     5.3    2.7
+         primitive            Control.Monad.Primitive  Control/Monad/Primitive.hs:205:3-16          1549      61440    5.3    0.0     5.3    0.0
+          writeByteArray#     Data.Primitive.Types     Data/Primitive/Types.hs:281:448-517          1550      61440    0.0    0.0     0.0    0.0
+        primitive             Control.Monad.Primitive  Control/Monad/Primitive.hs:205:3-16          1547          2    0.0    0.3     0.0    0.3
+        sizeOf                Data.Primitive.Types     Data/Primitive/Types.hs:131:1-25             1543          1    0.0    0.0     0.0    0.0
+         sizeOf#              Data.Primitive.Types     Data/Primitive/Types.hs:281:71-101           1544          1    0.0    0.0     0.0    0.0
+          unI#                Data.Primitive.Types     Data/Primitive/Types.hs:246:1-17             1545          1    0.0    0.0     0.0    0.0
+     matrixFromList.len       Lib                      src/Lib.hs:66:11-27                          1539          1    0.0    0.0     0.0    0.0
+ CAF:main_b                   Main                     app/Main.hs:16:9                             1522          0    0.0    0.0    28.4   16.0
+  main                        Main                     app/Main.hs:(10,1)-(22,11)                   1551          0    0.0    0.0    28.4   16.0
+   main.b                     Main                     app/Main.hs:16:9-63                          1552          1    0.0    0.0    28.4   16.0
+    matrixFromList            Lib                      src/Lib.hs:(61,1)-(66,27)                    1555          1    0.0    0.0    28.4   16.0
+     matrixFromList.content   Lib                      src/Lib.hs:65:11-44                          1559          1    0.0    0.0    28.4   16.0
+      byteArrayFromList       Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:273:1-56         1560          1    3.2    0.0    28.4   16.0
+       byteArrayFromListN     Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:(276,1)-(287,30) 1561          1    0.0    0.0    25.3   16.0
+        byteArrayFromListN.go Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:(278,9)-(285,81) 1566     327681   11.6   14.2    25.3   14.2
+         primitive            Control.Monad.Primitive  Control/Monad/Primitive.hs:205:3-16          1567     327680   10.5    0.0    13.7    0.0
+          writeByteArray#     Data.Primitive.Types     Data/Primitive/Types.hs:281:448-517          1568     327680    3.2    0.0     3.2    0.0
+        primitive             Control.Monad.Primitive  Control/Monad/Primitive.hs:205:3-16          1565          2    0.0    1.8     0.0    1.8
+        sizeOf                Data.Primitive.Types     Data/Primitive/Types.hs:131:1-25             1562          1    0.0    0.0     0.0    0.0
+         sizeOf#              Data.Primitive.Types     Data/Primitive/Types.hs:281:71-101           1563          1    0.0    0.0     0.0    0.0
+          unI#                Data.Primitive.Types     Data/Primitive/Types.hs:246:1-17             1564          1    0.0    0.0     0.0    0.0
+     matrixFromList.len       Lib                      src/Lib.hs:66:11-27                          1556          1    0.0    0.0     0.0    0.0
+ CAF:main_c                   Main                     app/Main.hs:17:9                             1525          0    0.0    0.0     0.0    0.0
+  main                        Main                     app/Main.hs:(10,1)-(22,11)                   1569          0    0.0    0.0     0.0    0.0
+   main.c                     Main                     app/Main.hs:17:9-66                          1570          1    0.0    0.0     0.0    0.0
+    matrixFromList            Lib                      src/Lib.hs:(61,1)-(66,27)                    1571          1    0.0    0.0     0.0    0.0
+     matrixFromList.content   Lib                      src/Lib.hs:65:11-44                          1573          1    0.0    0.0     0.0    0.0
+      byteArrayFromList       Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:273:1-56         1574          1    0.0    0.0     0.0    0.0
+       byteArrayFromListN     Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:(276,1)-(287,30) 1575          1    0.0    0.0     0.0    0.0
+        byteArrayFromListN.go Data.Primitive.ByteArray Data/Primitive/ByteArray.hs:(278,9)-(285,81) 1580         49    0.0    0.0     0.0    0.0
+         primitive            Control.Monad.Primitive  Control/Monad/Primitive.hs:205:3-16          1581         48    0.0    0.0     0.0    0.0
+          writeByteArray#     Data.Primitive.Types     Data/Primitive/Types.hs:281:448-517          1582         48    0.0    0.0     0.0    0.0
+        primitive             Control.Monad.Primitive  Control/Monad/Primitive.hs:205:3-16          1579          2    0.0    0.0     0.0    0.0
+        sizeOf                Data.Primitive.Types     Data/Primitive/Types.hs:131:1-25             1576          1    0.0    0.0     0.0    0.0
+         sizeOf#              Data.Primitive.Types     Data/Primitive/Types.hs:281:71-101           1577          1    0.0    0.0     0.0    0.0
+          unI#                Data.Primitive.Types     Data/Primitive/Types.hs:246:1-17             1578          1    0.0    0.0     0.0    0.0
+     matrixFromList.len       Lib                      src/Lib.hs:66:11-27                          1572          1    0.0    0.0     0.0    0.0
+ CAF:main_k                   Main                     app/Main.hs:13:9                             1519          0    0.0    0.0     0.0    0.0
+  main                        Main                     app/Main.hs:(10,1)-(22,11)                   1536          0    0.0    0.0     0.0    0.0
+   main.k                     Main                     app/Main.hs:13:9-19                          1537          1    0.0    0.0     0.0    0.0
+ CAF:main_m                   Main                     app/Main.hs:11:9                             1523          0    0.0    0.0     0.0    0.0
+  main                        Main                     app/Main.hs:(10,1)-(22,11)                   1534          0    0.0    0.0     0.0    0.0
+   main.m                     Main                     app/Main.hs:11:9-13                          1535          1    0.0    0.0     0.0    0.0
+ CAF:main_n                   Main                     app/Main.hs:12:9                             1520          0    0.0    0.0     0.0    0.0
+  main                        Main                     app/Main.hs:(10,1)-(22,11)                   1553          0    0.0    0.0     0.0    0.0
+   main.n                     Main                     app/Main.hs:12:9-15                          1554          1    0.0    0.0     0.0    0.0
+ CAF:main_w3                  Main                     <no location info>                           1521          0    0.0    0.0    21.1   28.4
+  main                        Main                     app/Main.hs:(10,1)-(22,11)                   1557          0    0.0    0.0    21.1   28.4
+   main.b                     Main                     app/Main.hs:16:9-63                          1558          0   21.1   28.4    21.1   28.4
+ CAF:mc                       Lib                      src/Lib.hs:88:1-2                            1484          0    0.0    0.0     0.0    0.0
+  mc                          Lib                      src/Lib.hs:88:1-6                            1593          1    0.0    0.0     0.0    0.0
+ CAF:mr                       Lib                      src/Lib.hs:76:1-2                            1481          0    0.0    0.0     0.0    0.0
+  mr                          Lib                      src/Lib.hs:76:1-10                           1602          1    0.0    0.0     0.0    0.0
+ CAF:nc                       Lib                      src/Lib.hs:91:1-2                            1485          0    0.0    0.0     0.0    0.0
+  nc                          Lib                      src/Lib.hs:91:1-7                            1589          1    0.0    0.0     0.0    0.0
+ CAF:nr                       Lib                      src/Lib.hs:82:1-2                            1486          0    0.0    0.0     0.0    0.0
+  nr                          Lib                      src/Lib.hs:82:1-16                           1595          1    0.0    0.0     0.0    0.0
+ CAF:regsA                    Lib                      src/Lib.hs:73:1-5                            1480          0    0.0    0.0     0.0    0.0
+  regsA                       Lib                      src/Lib.hs:73:1-9                            1598          1    0.0    0.0     0.0    0.0
+ CAF:regsB                    Lib                      src/Lib.hs:79:1-5                            1482          0    0.0    0.0     0.0    0.0
+  regsB                       Lib                      src/Lib.hs:79:1-9                            1596          1    0.0    0.0     0.0    0.0
+ CAF:sIZEOF_DOUBLE            Data.Primitive.MachDeps  Data/Primitive/MachDeps.hs:77:1-13            929          0    0.0    0.0     0.0    0.0
+  sIZEOF_DOUBLE               Data.Primitive.MachDeps  Data/Primitive/MachDeps.hs:77:1-17           1546          1    0.0    0.0     0.0    0.0
+ CAF:simdW                    Lib                      src/Lib.hs:70:1-5                            1479          0    0.0    0.0     0.0    0.0
+  simdW                       Lib                      src/Lib.hs:70:1-9                            1597          1    0.0    0.0     0.0    0.0
+ main                         Main                     app/Main.hs:(10,1)-(22,11)                   1529          0    0.0    0.0     0.0    0.0

@@ -23,12 +23,16 @@ dependencies:
 - base >= 4.7 && < 5
 - primitive
 - ghc-prim
+- deepseq
 
 ghc-options:
-- -fllvm
+- -fllvm -optl-O2 -optl-ffp-contract=fast -optl-mfma -optl-mavx2 
 - -mavx2
-- -ddump-llvm
-- -ddump-to-file
+- -O2
+- -fprof-auto
+# - -optlc--fp-contract=fast 
+# - -optlc--mfma
+# - -optlo--loop-unroll 
 
 library:
   source-dirs: src
@@ -41,6 +45,7 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    
     dependencies:
     - lascive
 

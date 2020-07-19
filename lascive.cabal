@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aca1f9a4a2169c1e54f8411720fcde9d436ff3c9b68b5acc7b7eb267ae5191c5
+-- hash: f5a1e7bc107836f5bb1e76c04d7a081079bbb9d94abbf3ae7f74b3090f84346d
 
 name:           lascive
 version:        0.1.0.0
@@ -32,9 +32,10 @@ library
       Paths_lascive
   hs-source-dirs:
       src
-  ghc-options: -fllvm -mavx2 -ddump-llvm -ddump-to-file
+  ghc-options: -fllvm -optl-O2 -optl-ffp-contract=fast -optl-mfma -optl-mavx2 -mavx2 -O2 -fprof-auto
   build-depends:
       base >=4.7 && <5
+    , deepseq
     , ghc-prim
     , primitive
   default-language: Haskell2010
@@ -45,9 +46,10 @@ executable lascive-exe
       Paths_lascive
   hs-source-dirs:
       app
-  ghc-options: -fllvm -mavx2 -ddump-llvm -ddump-to-file -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -fllvm -optl-O2 -optl-ffp-contract=fast -optl-mfma -optl-mavx2 -mavx2 -O2 -fprof-auto -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , deepseq
     , ghc-prim
     , lascive
     , primitive
@@ -60,9 +62,10 @@ test-suite lascive-test
       Paths_lascive
   hs-source-dirs:
       test
-  ghc-options: -fllvm -mavx2 -ddump-llvm -ddump-to-file -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -fllvm -optl-O2 -optl-ffp-contract=fast -optl-mfma -optl-mavx2 -mavx2 -O2 -fprof-auto -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , deepseq
     , ghc-prim
     , lascive
     , primitive
