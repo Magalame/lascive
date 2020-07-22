@@ -26,10 +26,10 @@ dependencies:
 - deepseq
 
 ghc-options:
-- -fllvm -optl-O2 -optl-ffp-contract=fast -optl-mfma -optl-mavx2 
+- -fllvm
 - -mavx2
 - -O2
-- -fprof-auto
+# - -fprof-auto
 # - -optlc--fp-contract=fast 
 # - -optlc--mfma
 # - -optlo--loop-unroll 
@@ -41,10 +41,10 @@ executables:
   lascive-exe:
     main:                Main.hs
     source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+    # ghc-options:
+    # - -threaded
+    # - -rtsopts
+    # - -with-rtsopts=-N
     
     dependencies:
     - lascive

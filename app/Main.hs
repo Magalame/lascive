@@ -10,13 +10,15 @@ main :: IO ()
 main = do
     let m = 3
         n = 4*4 -- 4 avx registers, each can pack 4 doubles
-        k = 2048*10
+        k = 2048*100
         
-        a = matrixFromList m k $ take (m*k) $ repeat (1 :: Double)
-        b = matrixFromList k n $ [0..(4*4*2048*10)-1 :: Double]
-        c = matrixFromList m n $ take (m*n) $ repeat (0 :: Double)
+        a = matrixFromFunc m k $ (\i j -> 1)
+        b = matrixFromFunc k n $ (\i j -> (fromIntegral (i*n + j)) :: Double)
+        c = matrixFromFunc m n $ (\i j -> 0)
+
+    -- print a
 
     let 
-        d = gemm a b c
+        d = {-# SCC "gemm" #-} gemm a b c
 
     print d

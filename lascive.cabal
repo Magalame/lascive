@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f5a1e7bc107836f5bb1e76c04d7a081079bbb9d94abbf3ae7f74b3090f84346d
+-- hash: 22cc068119ecf987fce536ff56ee13da52d236688a5756f33c438e39fe4c4a11
 
 name:           lascive
 version:        0.1.0.0
@@ -27,12 +27,13 @@ source-repository head
 
 library
   exposed-modules:
+      Lascive.SIMD.DoubleX4
       Lib
   other-modules:
       Paths_lascive
   hs-source-dirs:
       src
-  ghc-options: -fllvm -optl-O2 -optl-ffp-contract=fast -optl-mfma -optl-mavx2 -mavx2 -O2 -fprof-auto
+  ghc-options: -fllvm -mavx2 -O2 -fno-prof-auto
   build-depends:
       base >=4.7 && <5
     , deepseq
@@ -46,7 +47,7 @@ executable lascive-exe
       Paths_lascive
   hs-source-dirs:
       app
-  ghc-options: -fllvm -optl-O2 -optl-ffp-contract=fast -optl-mfma -optl-mavx2 -mavx2 -O2 -fprof-auto -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -fllvm -mavx2 -O2 -fno-prof-auto
   build-depends:
       base >=4.7 && <5
     , deepseq
@@ -62,7 +63,7 @@ test-suite lascive-test
       Paths_lascive
   hs-source-dirs:
       test
-  ghc-options: -fllvm -optl-O2 -optl-ffp-contract=fast -optl-mfma -optl-mavx2 -mavx2 -O2 -fprof-auto -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -fllvm -mavx2 -O2 -fno-prof-auto -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , deepseq

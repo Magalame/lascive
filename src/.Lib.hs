@@ -13,24 +13,18 @@ import Control.Monad.Primitive (PrimMonad, PrimState)
 
 import qualified GHC.Prim as G
 import GHC.Prim (DoubleX4#, Double#, Int#, State#)
+import Data.Primitive.MachDeps  (sIZEOF_DOUBLE, aLIGNMENT_DOUBLE)
 
 import GHC.Base (Int(..), Double(..))
 import Control.Monad.ST (ST, runST)
 
 import Control.DeepSeq (NFData,rnf)
 
+import Lascive.SIMD.DoubleX4
+
 import Debug.Trace
 
 
-
-data DoubleX4 = DoubleX4 DoubleX4#
-
-instance Show DoubleX4 where
-    show (DoubleX4 vec) = "(" ++ show (D# a) ++ "," ++ show (D# b) ++ "," ++ show (D# c) ++ "," ++ show (D# d) ++ ")"
-        where (# a, b, c, d #) = G.unpackDoubleX4# vec
-
-unDoubleX4 :: DoubleX4 -> DoubleX4#
-unDoubleX4 (DoubleX4 vec) = vec
 
 
 
@@ -65,27 +59,11 @@ matrixFromList nrows ncols list
     where content = P.byteArrayFromList list
           len = length list
 
-matrixFromFunc :: Prim a => Int -> Int -> (Int -> Int -> a) ->  Matrix a
-matrixFromFunc nrows ncols func = Matrix nrows ncols $ runST $ do
-    let
-        len = nrows*ncols
-
-    new <- P.newByteArray $ len*(P.sizeOf (func 0 0))
-
-    -- sequence_ [ P.writeByteArray new (i*ncols + j) (func i j) | i <- [0..nrows], j <- [0..ncols]]
-    for 0 nrows $ \i -> do
-        for 0 ncols $ \j -> do
-            -- traceM $ show i ++ "," ++ show j
-            P.writeByteArray new (i*ncols + j) (func i j)
-
-
-    P.unsafeFreezeByteArray new
-
 
 simdW :: Int
 simdW = 4
 
-regsA :: Int  
+regsA :: Int               
 regsA = 3
 
 mr :: Int 
@@ -111,14 +89,14 @@ nc = 48
 for :: Monad m => Int -> Int -> (Int -> m ()) -> m ()
 for n0 !n f = loop n0
   where
-    loop !i | i == n    = return ()
+    loop i | i == n    = return ()
             | otherwise = f i >> loop (i+1)
 {-# INLINE for #-}
 
 for_step :: Monad m => Int -> Int -> Int -> (Int -> m ()) -> m ()
 for_step n0 !n step f = loop n0
   where
-    loop !i | i >= n    = return ()
+    loop i | i >= n    = return ()
            | otherwise = f i >> loop (i+step)
 {-# INLINE for_step #-}
 
@@ -126,10 +104,10 @@ for_step n0 !n step f = loop n0
 
 gemm :: Matrix Double -> Matrix Double -> Matrix Double -> Matrix Double
 gemm a@(Matrix m k _) b@(Matrix _ n _) c = runST $ do
-
     mutc <- thaw c
+    ctmp <- P.newByteArray (regsA*regsB)
 
-    {-# SCC "top_loop" #-} for_step 0 n nc $ \jc -> do -- nc = L3/kc*sizePrimitive
+    for_step 0 n nc $ \jc -> do -- nc = L3/kc*sizePrimitive
 
         for_step 0 k kc $ \pc -> do -- kc = L1 size / regsB*simdRegisterSize, 256 for avx2
 
@@ -139,58 +117,51 @@ gemm a@(Matrix m k _) b@(Matrix _ n _) c = runST $ do
 
                     for_step 0 (min mc m) mr $ \ir -> do -- mr is regsA 
 
-                        {-# SCC "p_loop" #-} for 0 (min kc k) $ \p -> do -- kc = L1 size / regsB*simdRegisterSize, 256 for avx2
+                        let 
+                            i = ir + ic
+                            j = jr + jc
+                        
+
+                        for 0 (min kc k) $ \p -> do -- kc = L1 size / regsB*simdRegisterSize, 256 for avx2
 
                             let 
-                                !i = ir + ic
-                                !k = p + pc
-                                !j = jr + jc
+                                k = p + pc
                             
-                            {-# SCC "b_loop" #-} for_step 0 nr simdW $ \bi -> do
+                            for 0 regsB $ \bi -> do
 
                                 let 
-                                    !bRow = readDoubleX4Matrix b k (j+bi) -- corresponds to bb, *4 since simd vec of width/step 4
+                                    biIndex = bi*simdW
+                                    bRow = readDoubleX4Matrix b k (j+biIndex) -- 
 
-                                {-# SCC "a_loop" #-} for 0 regsA $ \ai -> do
+                                for 0 regsA $ \ai -> do
 
                                     let 
-                                        !aVar = unD (readMatrix a (i+ai) k)
-                                        !aVec = G.broadcastDoubleX4# aVar
-                                        !resMul = G.timesDoubleX4# bRow aVec
-                                        !cRow = readDoubleX4Matrix c (i+ai) (j+bi) -- technically forbidden but it's fine
-                                        !cRes = G.plusDoubleX4# cRow resMul
+                                        aVar = unD (readMatrix a (i+ai) k)
+                                        aVec = G.broadcastDoubleX4# aVar
+                                        resMul = G.timesDoubleX4# bRow aVec
+                                    
+                                    cRowLifted <- C.primitive (readDoubleX4MMatrix mutc (i+ai) (j+biIndex)) 
 
-                                    {-# SCC "prim" #-}  C.primitive_ $ writeDoubleX4MMatrix mutc (i+ai) (j+bi) cRes
+                                    let 
+                                        cRow = unDoubleX4 cRowLifted
+                                        cRes = DoubleX4 (G.plusDoubleX4# cRow resMul)
+
+                                    P.writeByteArray ctmp (bi*regsB + regsA) cRes
+                        
+                        for 0 regsB $ \bi -> do
+
+                            for 0 regsA $ \ai -> do
+                                
+                                let 
+                                    biIndex = bi*simdW
+
+                                cRes <- P.readByteArray ctmp (bi*regsB + regsA)
+
+                                C.primitive_ $ writeDoubleX4MMatrix mutc (i+ai) (j+biIndex) (unDoubleX4 cRes)
 
     freeze mutc
     
 
-
-kernel :: (PrimMonad m) => Matrix Double -> Matrix Double -> MMatrix (PrimState m) Double -> Int -> Int -> Int -> m ()
-kernel a b c !i !k !j = do
-
-    -- traceM $ show i ++ "," ++ show k ++ "," ++ show j
-
-    for_step 0 nr simdW $ \bi -> do
-
-        let 
-            bRow = readDoubleX4Matrix b k (j+bi) -- corresponds to bb, *4 since simd vec of width/step 4
-
-        for 0 regsA $ \ai -> do
-
-            let 
-                aVar = unD (readMatrix a (i+ai) k)
-                aVec = G.broadcastDoubleX4# aVar
-                resMul = G.timesDoubleX4# bRow aVec
-            
-            cRowLifted <- C.primitive (readDoubleX4MMatrix c (i+ai) (j+bi)) 
-
-            let 
-                cRow = unDoubleX4 cRowLifted
-                cRes = G.plusDoubleX4# cRow resMul
-
-            C.primitive_ $ writeDoubleX4MMatrix c (i+ai) (j+bi) cRes -- used to be bi*4
-{-# INLINE kernel #-}
 
 readMatrix :: (Prim a) => Matrix a -> Int -> Int -> a
 readMatrix (Matrix _ ncols arr) !i !j = P.indexByteArray arr (i*ncols + j)
@@ -228,4 +199,5 @@ unD :: Double -> Double#
 unD (D# d) = d
 {-# INLINE unD #-}
 
-
+unDoubleX4 :: DoubleX4 -> DoubleX4#
+unDoubleX4 (DoubleX4 vec) = vec
